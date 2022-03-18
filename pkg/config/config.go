@@ -17,6 +17,7 @@ package config
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
@@ -342,6 +343,25 @@ func Load(configPath string) (*FulcioConfig, error) {
 	return Read(b)
 }
 
+var caCert = `-----BEGIN CERTIFICATE-----
+MIIC2jCCAcKgAwIBAgIRAO8GakGeX5OJDWFdieQ8QW8wDQYJKoZIhvcNAQELBQAw
+ADAeFw0yMjAzMTcxNzQ4MTJaFw0yMjA2MTUxNzQ4MTJaMAAwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQDHQRLeXWvFTxtsaMTaYK380BcYHbJWZTVdTYQz
+v36UpnxQb2L64P4zJO5I/8NwLjGKsT5HYWjV5nrgAKKiPDmgqVtk/krxANTyJ+KX
+eswx7gC+58vjAsSILOnxDN5Je1jDx4FSd49VoHZ1+04jkCLgotcixMBf5yYBAxA2
+So1CQGP4Qzla4VExoykCaos4rfxltUMHRQ5P0GYP1Ey3lqFka1LIJTTBoRgiRdJ0
+2DtzlR/NYVRP1xkLKe2VHJD+bkqXFx+Fti9QC/xod5eEN5wlF3TtIfSFFoSmbKOr
+TfIlt8wX2CT/6bmY8LEYLTsqoVLA14BwRr5CQxGuUlrATENnAgMBAAGjTzBNMA4G
+A1UdDwEB/wQEAwIFoDAMBgNVHRMBAf8EAjAAMC0GA1UdEQEB/wQjMCGCH215LXN1
+cGVydmlzb3IuZGVtby5waW5uaXBlZC5kZXYwDQYJKoZIhvcNAQELBQADggEBAE92
+wWZJ01qTkkcm+Onh1zeHss+PBHyff9TpnQQFFGnUPzmzfOOKUR5H2kY2+d/avM+V
+Mva2RU0qlJyxw+6k5hV1bcrQNhCXhCh+c/BBnkxm/dY/zqPMuHas1Qh3Eh1qImFs
+ls0PQhK4MijOavd4xeEKR1fP7UnrbNc6X8GePV+YOa1WO3ULTpY86as/Rd+iMCKQ
+f3Ztd93BXUo7xJ7hSzsWX82pS32Vm6IqE2DiZ0VPDdobABzHTLumY+aI1A20A9Pw
+tUrh0wbVHREvz0YVk98589DvgXBIiKCuv6g2zwgXTetKu73J0VBm3rrQdSKxAVri
+6E7Htz6UlXZbGWN3v4Y=
+-----END CERTIFICATE-----`
+
 // Read parses the bytes of a config
 func Read(b []byte) (*FulcioConfig, error) {
 	config, err := parseConfig(b)
@@ -377,7 +397,12 @@ func Read(b []byte) (*FulcioConfig, error) {
 		// If we parse a config that doesn't include a cluster issuer
 		// signed with the cluster'sCA, then restore the original transport
 		// (in case we overwrote it)
-		http.DefaultTransport = originalTransport
+
+		log.Logger.Infof("using the pre-defined CA: %v", caCert)
+		t := originalTransport.(*http.Transport).Clone()
+		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		http.DefaultTransport = t
+		//http.DefaultTransport = originalTransport
 	}
 
 	if err := config.prepare(); err != nil {
