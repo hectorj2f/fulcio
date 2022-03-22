@@ -159,11 +159,16 @@ func CheckSignature(pub crypto.PublicKey, proof []byte, subject string) error {
 
 func email(ctx context.Context, principal *oidc.IDToken) (identity.Principal, error) {
 	emailAddress, emailVerified, err := oauthflow.EmailFromIDToken(principal)
-	if !emailVerified {
-		return nil, errors.New("email_verified claim was false")
-	} else if err != nil {
-		return nil, err
+	fmt.Printf("emailAddress: %v\n", emailAddress)
+	fmt.Printf("emailVerified: %v\n", emailVerified)
+	if err != nil {
+		fmt.Printf("err emailFromIDToken: %v\n", err)
 	}
+	//if !emailVerified {
+	//	return nil, errors.New("email_verified claim was false")
+	//} else if err != nil {
+	//	return nil, err
+	//}
 
 	cfg, ok := config.FromContext(ctx).GetIssuer(principal.Issuer)
 	if !ok {
