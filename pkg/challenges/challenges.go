@@ -218,15 +218,22 @@ func GithubWorkflow(ctx context.Context, principal *oidc.IDToken, pubKey crypto.
 func URI(ctx context.Context, principal *oidc.IDToken, pubKey crypto.PublicKey, challenge []byte) (*ChallengeResult, error) {
 	uriWithSubject := principal.Subject
 
+	fmt.Printf("uriWithSubject: %v\n", uriWithSubject)
+	fmt.Printf("principal.Issuer: %v\n", principal.Issuer)
+
 	cfg, ok := config.FromContext(ctx).GetIssuer(principal.Issuer)
 	if !ok {
 		return nil, errors.New("invalid configuration for OIDC ID Token issuer")
 	}
 
+	fmt.Printf("cfg: %v\n", cfg)
+
 	uSubject, err := url.Parse(uriWithSubject)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("uSubject: %v\n", uSubject)
 
 	// The subject prefix URI must match the domain (excluding the subdomain) of the issuer
 	// In order to declare this configuration, a test must have been done to prove ownership
@@ -240,18 +247,23 @@ func URI(ctx context.Context, principal *oidc.IDToken, pubKey crypto.PublicKey, 
 		return nil, err
 	}
 
+	fmt.Printf("uIssuer: %v\n", uIssuer)
+
 	// Check that:
 	// * The URI schemes match
 	// * Either the hostnames exactly match or the top level and second level domains match
-	if err := isURISubjectAllowed(uSubject, uIssuer); err != nil {
-		return nil, err
-	}
+	//if err := isURISubjectAllowed(uSubject, uIssuer); err != nil {
+	//	return nil, err
+	//}
 
 	// The subject hostname must exactly match the subject domain from the configuration
 	uDomain, err := url.Parse(cfg.SubjectDomain)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("uDomain: %v\n", uDomain)
+
 	if uSubject.Scheme != uDomain.Scheme {
 		return nil, fmt.Errorf("subject URI scheme (%s) must match expected domain URI scheme (%s)", uSubject.Scheme, uDomain.Scheme)
 	}
@@ -261,6 +273,11 @@ func URI(ctx context.Context, principal *oidc.IDToken, pubKey crypto.PublicKey, 
 
 	// Check the proof - A signature over the OIDC token subject
 	if err := CheckSignature(pubKey, challenge, uriWithSubject); err != nil {
+		fmt.Println("failed initial check signature")
+		if err := CheckSignature(pubKey, challenge, "hectorf@vmware.com"); err != nil {
+			fmt.Println("failed second check signature")
+			return nil, err
+		}
 		return nil, err
 	}
 
@@ -268,6 +285,8 @@ func URI(ctx context.Context, principal *oidc.IDToken, pubKey crypto.PublicKey, 
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("issuer: %v\n", issuer)
 
 	// Now issue cert!
 	return &ChallengeResult{
