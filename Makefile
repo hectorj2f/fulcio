@@ -49,7 +49,7 @@ endif
 FULCIO_PKG=github.com/sigstore/fulcio/pkg/api
 LDFLAGS=-X $(FULCIO_PKG).gitVersion=$(GIT_VERSION) -X $(FULCIO_PKG).gitCommit=$(GIT_HASH) -X $(FULCIO_PKG).gitTreeState=$(GIT_TREESTATE) -X $(FULCIO_PKG).buildDate=$(BUILD_DATE)
 
-KO_PREFIX ?= gcr.io/projectsigstore
+KO_PREFIX ?= hectorj2f
 export KO_DOCKER_REPO=$(KO_PREFIX)
 
 GHCR_PREFIX ?= ghcr.io/sigstore

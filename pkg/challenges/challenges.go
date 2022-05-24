@@ -255,12 +255,16 @@ func githubWorkflow(ctx context.Context, principal *oidc.IDToken) (identity.Prin
 func uri(ctx context.Context, principal *oidc.IDToken) (identity.Principal, error) {
 	uriWithSubject := principal.Subject
 
+	fmt.Printf("uriWithSubject: %v\n", uriWithSubject)
+	fmt.Printf("principal.Issuer: %v\n", principal.Issuer)
+
 	cfg, ok := config.FromContext(ctx).GetIssuer(principal.Issuer)
 	if !ok {
 		return nil, errors.New("invalid configuration for OIDC ID Token issuer")
 	}
 
-	// The subject hostname must exactly match the subject domain from the configuration
+	fmt.Printf("cfg: %v\n", cfg)
+
 	uSubject, err := url.Parse(uriWithSubject)
 	if err != nil {
 		return nil, err
@@ -269,6 +273,9 @@ func uri(ctx context.Context, principal *oidc.IDToken) (identity.Principal, erro
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("uDomain: %v\n", uDomain)
+
 	if uSubject.Scheme != uDomain.Scheme {
 		return nil, fmt.Errorf("subject URI scheme (%s) must match expected domain URI scheme (%s)", uSubject.Scheme, uDomain.Scheme)
 	}
