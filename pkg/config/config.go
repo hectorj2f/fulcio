@@ -22,10 +22,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	lru "github.com/hashicorp/golang-lru"
@@ -145,7 +147,30 @@ func (fc *FulcioConfig) GetVerifier(issuerURL string) (*oidc.IDTokenVerifier, bo
 func (fc *FulcioConfig) prepare() error {
 	fc.verifiers = make(map[string]*oidc.IDTokenVerifier, len(fc.OIDCIssuers))
 	for _, iss := range fc.OIDCIssuers {
-		provider, err := oidc.NewProvider(context.Background(), iss.IssuerURL)
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+		dialer := &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}
+		transport := &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           dialer.DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		}
+
+		var client *http.Client
+		client = &http.Client{
+			Transport: transport,
+		}
+		clientctx := oidc.ClientContext(ctx, client)
+
+		provider, err := oidc.NewProvider(clientctx, iss.IssuerURL)
 		if err != nil {
 			return fmt.Errorf("provider %s: %w", iss.IssuerURL, err)
 		}
