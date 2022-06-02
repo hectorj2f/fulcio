@@ -26,8 +26,7 @@ import (
 func EmailFromIDToken(token *oidc.IDToken) (string, bool, error) {
 	// Extract custom claims
 	var claims struct {
-		Email    string `json:"email"`
-		Verified bool   `json:"email_verified"`
+		Email    string `json:"username"`
 	}
 	if err := token.Claims(&claims); err != nil {
 		return "", false, err
@@ -36,7 +35,7 @@ func EmailFromIDToken(token *oidc.IDToken) (string, bool, error) {
 		return "", false, errors.New("token missing email claim")
 	}
 
-	return claims.Email, claims.Verified, nil
+	return claims.Email, true, nil
 }
 
 func IssuerFromIDToken(token *oidc.IDToken, claimJSONPath string) (string, error) {
