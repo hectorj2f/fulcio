@@ -195,7 +195,6 @@ func runServeCmd(cmd *cobra.Command, args []string) {
 	switch viper.GetString("ca") {
 	case "googleca":
 		baseca, err = googlecav1.NewCertAuthorityService(cmd.Context(), viper.GetString("gcp_private_ca_parent"))
-		defer baseca.Close()
 	case "pkcs11ca":
 		params := pkcs11ca.Params{
 			ConfigPath: viper.GetString("pkcs11-config-path"),
